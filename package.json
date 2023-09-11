@@ -1,7 +1,7 @@
 {
   "name": "@fixers/aweber-node-api",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Aweber do not have API!",
   "author": "Luca <git@lucacicada.me>",
   "license": "MIT",

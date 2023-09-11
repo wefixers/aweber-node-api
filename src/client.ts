@@ -197,6 +197,15 @@ export interface AweberGetListsOptions extends AweberAccountOptions {
   size: number
 }
 
+export interface AweberFindListsOptions extends AweberGetListsOptions {
+  /**
+   * Name or unique list ID of the list
+   *
+   * string [ 1 .. 100 ] characters
+   */
+  name: string
+}
+
 /**
  * Request body to add a subscriber.
  */
@@ -320,6 +329,48 @@ export class AweberClient extends OAuth2ApiClient {
 
     return await this._fetch<AweberLists>(ep, {
       query: {
+        'ws.start': options?.start,
+        'ws.size': options?.size,
+      },
+    })
+  }
+
+  getAllLists = async (): Promise<AweberList[]> => {
+    let start = 0
+    const MAX_PAGE_SIZE = 100
+
+    const result: AweberList[] = []
+
+    while (true) {
+      const response = await this.getLists({
+        size: MAX_PAGE_SIZE,
+        start,
+      })
+
+      result.push(...response.entries)
+
+      start += MAX_PAGE_SIZE
+
+      if (start >= response.total_size) {
+        break
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * This endpoint is used to search for lists when you do not have a link nor know the list ID.
+   *
+   * @see https://api.aweber.com/#tag/Lists/paths/~1accounts~1{accountId}~1lists?ws.op=find/get
+   */
+  findList = async (options: AweberFindListsOptions): Promise<AweberLists> => {
+    const ep = ['lists']
+
+    return await this._fetch<AweberLists>(ep, {
+      query: {
+        'ws.op': 'find',
+        'name': options.name,
         'ws.start': options?.start,
         'ws.size': options?.size,
       },

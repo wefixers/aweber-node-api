@@ -16,6 +16,12 @@ const aweber = new AweberClient({
   refreshToken: import.meta.env.VITE_AWEBER_REFRESH_TOKEN,
 })
 
+it('should build the correct url', async () => {
+  expect(aweber._getURL('https://api.aweber.com/1.0/', 'http://aweber.com/1.0/')).toBe('https://api.aweber.com/1.0/')
+
+  expect(aweber._getURL('')).toBe(`https://api.aweber.com/1.0/accounts/${aweber.accountId}`)
+})
+
 // behold the magic of testing on live services!
 it('should list all lists', async () => {
   await expect(aweber.getLists({ start: 0, size: 1 })).resolves.toBeTypeOf('object')

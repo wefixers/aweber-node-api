@@ -276,17 +276,44 @@ export interface AweberAddSubscriberRequest {
 }
 
 export interface AweberClientOptions {
-  accountId: string
+  /**
+   * The aweber account ID.
+   */
+  accountId: string | number
+
+  /**
+   * The OAuth2 client ID.
+   */
   clientId: string
+
+  /**
+   * The OAuth2 client secret.
+   */
   clientSecret: string
+
+  /**
+   * The OAuth2 refresh token.
+   */
   refreshToken: string
 
+  /**
+   * An optional OAuth2 access token.
+   */
   accessToken?: string
+
+  /**
+   * The OAuth2 scope.
+   *
+   * @default ['account.read', 'list.read', 'list.write', 'subscriber.read', 'subscriber.write']
+   */
   scopes?: string[]
 }
 
 export class AweberClient extends OAuth2ApiClient {
-  private _accountId: string
+  /**
+   * The aweber account ID.
+   */
+  readonly accountId: string
 
   constructor(options: AweberClientOptions) {
     if (!options?.accountId) {
@@ -316,7 +343,7 @@ export class AweberClient extends OAuth2ApiClient {
       scopes: options.scopes || ['account.read', 'list.read', 'list.write', 'subscriber.read', 'subscriber.write'],
     })
 
-    this._accountId = options.accountId
+    this.accountId = String(options.accountId)
   }
 
   /**
@@ -392,11 +419,36 @@ export class AweberClient extends OAuth2ApiClient {
     })
   }
 
-  _fetch = async <T>(request: string | string[], { accountId, ...options }: AweberFetchOptions = {}) => {
-    const _accountId = accountId || this._accountId
-    const parts = Array.isArray(request) ? request : [request]
+  /**
+   * Create a url for the Aweber API.
+   *
+   * @param request The request path, an url.
+   * @param accountId
+   */
+  _getURL = (request: URL | string | string[], accountId?: string) => {
+    const parts = (Array.isArray(request) ? request : [request]).filter(Boolean).map(String)
 
-    const url = resolveURL('https://api.aweber.com/1.0/accounts', _accountId, ...parts)
+    if (parts.length === 0) {
+      return resolveURL('https://api.aweber.com/1.0/accounts', accountId || this.accountId)
+    }
+
+    // take the first element of the request, guaranteed to exists after filtering
+    const root = parts.shift()!
+
+    if (root.startsWith('http')) {
+      return resolveURL(root, ...parts)
+    }
+
+    return resolveURL('https://api.aweber.com/1.0/accounts', accountId || this.accountId, ...parts)
+  }
+
+  /**
+   * Fetch a resource from the Aweber API.
+   *
+   * Use a fully qualified or append a path after `'https://api.aweber.com/1.0/accounts/' + accountId + ...`
+   */
+  _fetch = async <T>(request: string | string[], { accountId, ...options }: AweberFetchOptions = {}) => {
+    const url = this._getURL(request, accountId)
 
     return this.sendRequest<T>(url, {
       ...options,
